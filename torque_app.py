@@ -8,7 +8,7 @@ st.set_page_config(page_title="Islam Mohamed | Flange Integrity Master", layout=
 top_col1, top_col2 = st.columns([1, 3])
 with top_col1:
     # Use a professional icon or your company logo URL here
-    st.title("⚙️") 
+    st.title("⚙️Semadco⚙️") 
 with top_col2:
     lang = st.radio("Language / اللغة", ["English", "Arabic"], horizontal=True, label_visibility="collapsed")
 
