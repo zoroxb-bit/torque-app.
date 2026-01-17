@@ -6,7 +6,7 @@ st.set_page_config(page_title="Islam Mohamed | Flange Integrity Ecosystem", layo
 # --- 2. TOP HEADLINE NAVIGATION & LOGO ---
 top_col1, top_col2 = st.columns([1, 3])
 with top_col1:
-    st.title("⚙️") 
+    st.title("⚙️Semadco⚙️") 
 with top_col2:
     lang = st.radio("Language / اللغة", ["English", "Arabic"], horizontal=True, label_visibility="collapsed")
 
