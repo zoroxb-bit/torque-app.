@@ -4,7 +4,7 @@ import datetime
 from io import BytesIO
 
 # --- 1. INITIAL APP CONFIGURATION ---
-st.set_page_config(page_title="Eslam Mohamed | Master Bolting Pro", layout="centered")
+st.set_page_config(page_title="Islam Mohamed | Master Bolting Pro", layout="centered")
 
 # --- 2. SECURITY SYSTEM ---
 def check_password():
@@ -158,62 +158,4 @@ if check_password():
             <p><b>{L['sign']}</b> __________________________</p>
         </div>
         """, unsafe_allow_html=True)
-        "M36": {"d": 1.417, "As": 1.266, "af": "55 mm"},
-        "M45": {"d": 1.771, "As": 2.055, "af": "70 mm"},
-        "M52": {"d": 2.047, "As": 2.810, "af": "80 mm"},
-        "M64": {"d": 2.520, "As": 4.148, "af": "95 mm"},
-        "M100": {"d": 3.937, "As": 10.740, "af": "145 mm"}
-    }
-}
-
-ENERPAC_CATALOG = {
-    "S-Series (Standard)": {"S1500": 0.1897, "S3000": 0.3225, "S6000": 0.6124, "S11000": 1.126, "S25000": 2.512},
-    "S-Series (X-Edition)": {"S1500X": 0.1897, "S3000X": 0.3225, "S6000X": 0.6124, "S11000X": 1.126, "S25000X": 2.512},
-    "W-Series (Low Profile)": {"W2000X": 0.2031, "W4000X": 0.4125, "W8000X": 0.8250, "W22000X": 2.215},
-    "RSL-Series (Slim Line)": {"RSL1500": 0.1411, "RSL3000": 0.3069, "RSL8000": 0.7831}
-}
-
-# --- 4. EQUIPMENT INFO SECTION ---
-st.subheader(L["eq_header"])
-e_tag = st.text_input(L["tag"])
-e_flange = st.text_input(L["flange"])
-e_permit = st.text_input(L["permit"])
-uploaded_file = st.file_uploader("Upload Flange Photo / ارفع صورة الوصلة", type=['jpg', 'png', 'jpeg'])
-
-# --- 5. CALCULATOR ---
-st.divider()
-sel_mat = st.selectbox(L["mat"], ["ASTM A193 B7 (Inch)", "Metric Grade 8.8 (mm)", "ASTM A193 B16 (Inch)", "Metric Grade 10.9 (mm)"])
-u_type = "Imperial" if "Inch" in sel_mat else "Metric"
-sy_val = 105000 if "B7" in sel_mat or "B16" in sel_mat else 92800
-
-c1, c2 = st.columns(2)
-with c1:
-    sel_size = st.selectbox(L["size"], list(SIZES_DB[u_type].keys()))
-    tool_fam = st.selectbox("Tool Series", list(ENERPAC_CATALOG.keys()))
-with c2:
-    tool_mod = st.selectbox(L["tool"], list(ENERPAC_CATALOG[tool_fam].keys()))
-    k_val = st.selectbox("Lube (K)", [0.11, 0.13, 0.15])
-
-# Math Logic
-d = SIZES_DB[u_type][sel_size]["d"]
-As = SIZES_DB[u_type][sel_size]["As"]
-factor = ENERPAC_CATALOG[tool_fam][tool_mod]
-torque = (k_val * d * (sy_val * As * 0.50)) / 12
-psi = torque / factor
-
-st.info(f"{L['af']}: {SIZES_DB[u_type][sel_size]['af']}")
-res1, res2 = st.columns(2)
-res1.metric(L["res_t"], f"{round(torque)} Ft-Lb")
-res2.metric(L["res_p"], f"{round(psi)} PSI")
-
-# --- 6. REPORT SECTION ---
-st.divider()
-if st.button(L["print"]):
-    st.markdown(f"### 📝 FIELD REPORT: {e_tag}")
-    if uploaded_file: st.image(uploaded_file, caption="Verified Flange", width=300)
-    st.write(f"**Permit:** {e_permit} | **Joint ID:** {e_flange}")
-    st.write(f"**Tool:** Enerpac {tool_mod} | **Pressure:** {round(psi)} PSI")
-    st.write(f"**Target Torque:** {round(torque)} Ft-Lb")
-    st.write(f"**{L['sign']}** __________________________")
-
-st.caption(L["footer"])
+        
