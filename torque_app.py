@@ -33,18 +33,19 @@ if lang == "English":
     with col_sop: st.button("📖 SOP", on_click=lambda: st.info("ASME PCC-1: 30%-60%-100% Torque Steps."))
     with col_safe: st.button("⚠️ Safety", on_click=lambda: st.warning("Clear Hands! Check Reaction Arm."))
     with col_history: show_history = st.checkbox("📂 View Logs & Export")
-    L = {"title": "Industrial Bolting Master", "tag": "Equipment Tag", "sign": "Digital Signature (Name):", "save": "Save to Cloud", "print": "Print PDF", "export": "Export to Excel"}
+    L = {"title": "Industrial Bolting Master", "tag": "Equipment Tag", "sign": "Digital Signature:", "save": "Save to Cloud", "print": "Save as PDF", "export": "Download Excel", "yield": "Target Yield (%)"}
 else:
     st.markdown('<style>body {direction: rtl; text-align: right;}</style>', unsafe_allow_html=True)
     with col_sop: st.button("📖 الدليل", on_click=lambda: st.info("معيار ASME PCC-1: مراحل الربط ٣٠٪-٦٠٪-١٠٠٪"))
     with col_safe: st.button("⚠️ السلامة", on_click=lambda: st.warning("ابعد اليدين! تأكد من ذراع رد الفعل."))
     with col_history: show_history = st.checkbox("📂 السجل والتصدير")
-    L = {"title": "نظام إدارة العزم الصناعي", "tag": "رقم المعدة", "sign": "التوقيع الرقمي (الاسم):", "save": "مزامنة السحاب", "print": "طباعة PDF", "export": "تصدير إلى إكسل"}
+    L = {"title": "نظام إدارة العزم الصناعي", "tag": "رقم المعدة", "sign": "التوقيع الرقمي:", "save": "مزامنة السحاب", "print": "حفظ كـ PDF", "export": "تحميل Excel", "yield": "نسبة إجهاد الخضوع (%)"}
 
 # --- 5. ENERPAC & BOLT DATABASES ---
 SIZES_DB = {
     "Imperial": {
         "3/4\"-10": {"d": 0.75, "As": 0.334, "af": "1-1/4\""},
+        "7/8\"-9": {"d": 0.875, "As": 0.462, "af": "1-7/16\""},
         "1\"-8": {"d": 1.0, "As": 0.606, "af": "1-5/8\""},
         "1-1/2\"-8": {"d": 1.5, "As": 1.492, "af": "2-3/8\""},
         "2\"-8": {"d": 2.0, "As": 2.77, "af": "3-1/8\""},
@@ -54,16 +55,15 @@ SIZES_DB = {
     "Metric": {
         "M24": {"d": 0.94, "As": 0.54, "af": "36mm"},
         "M30": {"d": 1.18, "As": 0.869, "af": "46mm"},
-        "M36": {"d": 1.41, "As": 1.266, "af": "55mm"},
         "M64": {"d": 2.52, "As": 4.148, "af": "95mm"},
         "M100": {"d": 3.93, "As": 10.74, "af": "145mm"}
     }
 }
 
 ENERPAC_CATALOG = {
-    "S-Series (Standard)": {"S1500": 0.1897, "S3000": 0.3225, "S11000": 1.126, "S25000": 2.512},
-    "S-Series (X)": {"S1500X": 0.1897, "S3000X": 0.3225, "S6000X": 0.6124, "S11000X": 1.126, "S25000X": 2.512},
-    "W-Series (Low Profile)": {"W2000X": 0.2031, "W4000X": 0.4125, "W8000X": 0.825, "W22000X": 2.215},
+    "S-Series (Standard)": {"S3000": 0.3225, "S11000": 1.126},
+    "S-Series (X)": {"S3000X": 0.3225, "S11000X": 1.126},
+    "W-Series (Low Profile)": {"W2000X": 0.2031, "W4000X": 0.4125},
     "RSL-Series": {"RSL3000": 0.3069, "RSL11000": 1.112}
 }
 
@@ -71,6 +71,9 @@ ENERPAC_CATALOG = {
 st.header(L["title"])
 e_tag = st.text_input(L["tag"])
 tech_name = st.text_input(L["sign"])
+
+# Yield Control Feature
+yield_pct = st.slider(L["yield"], min_value=30, max_value=90, value=70, step=5)
 
 sel_mat = st.selectbox("Material", ["ASTM A193 B7 (Inch)", "Metric Grade 8.8 (mm)", "ASTM A193 B16 (Inch)"])
 u_type = "Imperial" if "Inch" in sel_mat else "Metric"
@@ -85,9 +88,10 @@ with c2:
     lube_type = st.selectbox("Lubricant Type", list(LUBE_DB.keys()))
     k_val = LUBE_DB[lube_type]
 
-# MATH
+# --- MATH LOGIC ---
 d, As = SIZES_DB[u_type][sel_size]["d"], SIZES_DB[u_type][sel_size]["As"]
-torque = (k_val * d * (sy_val * As * 0.50)) / 12
+# Calculation using the Yield Control (default 70% = 0.70)
+torque = (k_val * d * (sy_val * As * (yield_pct / 100))) / 12
 psi = torque / ENERPAC_CATALOG[tool_fam][tool_mod]
 
 st.info(f"Socket A/F: {SIZES_DB[u_type][sel_size]['af']}")
@@ -101,42 +105,39 @@ if show_history:
     logs = get_data("Reports")
     if not logs.empty:
         st.dataframe(logs)
-        
-        # Excel Export Logic
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            logs.to_excel(writer, index=False, sheet_name='Maintenance_Log')
+            logs.to_excel(writer, index=False, sheet_name='Log')
+        st.download_button(label=L["export"], data=output.getvalue(), file_name="Bolting_Export.xlsx")
+
+col_save, col_print = st.columns(2)
+with col_save:
+    if st.button(L["save"]):
+        try:
+            r_df = get_data("Reports")
+            new_report = pd.DataFrame([{
+                "Date": datetime.datetime.now().strftime("%Y-%m-%d"), 
+                "Tag": e_tag, "Torque": round(torque), "PSI": round(psi), 
+                "Yield%": yield_pct, "Technician": tech_name
+            }])
+            conn = st.connection("gsheets", type=GSheetsConnection)
+            conn.update(worksheet="Reports", data=pd.concat([r_df, new_report], ignore_index=True))
+            st.success("Synced!")
+        except: st.error("Local Save Only")
+
+with col_print:
+    if st.button(L["print"]):
+        st.markdown(f"""
+        <div style="border:5px solid black; padding:20px; background-color:white; color:black;">
+            <h2 style="text-align:center;">FIELD MAINTENANCE REPORT</h2>
+            <p><b>Equipment:</b> {e_tag} | <b>Date:</b> {datetime.datetime.now().strftime("%Y-%m-%d")}</p>
+            <hr>
+            <p><b>Load Control:</b> {yield_pct}% of Yield Strength</p>
+            <h2 style="color:red; text-align:center;">Pressure: {round(psi)} PSI</h2>
+            <h2 style="color:blue; text-align:center;">Torque: {round(torque)} Ft-Lb</h2>
+            <hr>
+            <p><b>Signature:</b> <span style="font-family:cursive; font-size:24px;">{tech_name}</span></p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.write("To save as PDF: Use Browser Print (Ctrl+P) and select 'Save as PDF'.")
         
-        st.download_button(
-            label=L["export"],
-            data=output.getvalue(),
-            file_name=f"Bolting_Log_{datetime.datetime.now().strftime('%Y%m%d')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-if st.button(L["save"]):
-    try:
-        r_df = get_data("Reports")
-        new_report = pd.DataFrame([{
-            "Date": datetime.datetime.now().strftime("%Y-%m-%d"), 
-            "Tag": e_tag, "Torque": round(torque), "PSI": round(psi), "Technician": tech_name, "Lube": lube_type
-        }])
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        conn.update(worksheet="Reports", data=pd.concat([r_df, new_report], ignore_index=True))
-        st.success("Synced to Cloud!")
-    except Exception as e:
-        st.error("Report Saved Locally (Cloud Sync unavailable)")
-
-if st.button(L["print"]):
-    st.markdown(f"""
-    <div style="border:5px solid black; padding:20px; background-color:white; color:black;">
-        <h2 style="text-align:center;">FIELD MAINTENANCE REPORT</h2>
-        <p><b>Equipment:</b> {e_tag} | <b>Date:</b> {datetime.datetime.now().strftime("%Y-%m-%d")}</p>
-        <hr>
-        <p><b>Lube:</b> {lube_type}</p>
-        <h2 style="color:red; text-align:center;">Pressure: {round(psi)} PSI</h2>
-        <h2 style="color:blue; text-align:center;">Torque: {round(torque)} Ft-Lb</h2>
-        <hr>
-        <p><b>Signature:</b> <span style="font-family:cursive; font-size:24px;">{tech_name}</span></p>
-    </div>
-    """, unsafe_allow_html=True)
