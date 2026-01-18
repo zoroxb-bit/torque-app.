@@ -137,5 +137,17 @@ with col_save:
         except: st.error("Save Failed - Check Connection")
 
 with col_print:
-    if st.button(L["
-    
+    if st.button(L["print"]):
+        st.markdown(f"""
+        <div style="border:5px solid black; padding:20px; background-color:white; color:black;">
+            <h2 style="text-align:center;">FIELD MAINTENANCE REPORT</h2>
+            <p><b>Equipment:</b> {e_tag} | <b>Date:</b> {datetime.datetime.now().strftime("%Y-%m-%d")}</p>
+            <hr>
+            <p><b>Load Control:</b> {yield_pct}% of Yield Strength | <b>Lube:</b> {lube_type}</p>
+            <h2 style="color:red; text-align:center;">Pressure: {round(psi)} PSI</h2>
+            <h2 style="color:blue; text-align:center;">Torque: {round(torque)} Ft-Lb</h2>
+            <hr>
+            <p><b>Signature:</b> <span style="font-family:cursive; font-size:24px;">{tech_name}</span></p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.write("To save as PDF: Use Browser Print (Ctrl+P).")
